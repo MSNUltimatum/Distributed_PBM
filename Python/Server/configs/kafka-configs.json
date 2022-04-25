@@ -1,0 +1,6 @@
+{
+  "bootstrap_servers": ["localhost:9092"],
+  "client_id": "PBMClient",
+  "acknowledgments": 1,
+  "pbm_topic": "pbm_results"
+}

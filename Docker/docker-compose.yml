@@ -1,4 +1,4 @@
-version: '3.9'
+version: '3.3'
 services:
   zookeeper:
     image: wurstmeister/zookeeper
@@ -7,7 +7,7 @@ services:
       - "2181:2181"
     hostname: zk1
     networks:
-      - kafka-spark
+      - distributed-pbm
     tty: true
 
   kafka1:
@@ -33,6 +33,22 @@ services:
       - distributed-pbm
     tty: true
 
+  kafka-connect:
+    image: 'bitnami/kafka:2.5.0'
+    container_name: kafka_connect
+    ports:
+      - '8079:8083'
+    volumes:
+      - './kafka_connect_data:/bitnami'
+      - './kafka_connect_config/worker.properties:/opt/bitnami/kafka/config/worker.properties'
+    depends_on:
+      - zookeeper
+      - kafka1
+    networks:
+      - distributed-pbm
+    command: /opt/bitnami/kafka/bin/connect-standalone.sh /opt/bitnami/kafka/config/worker.properties /opt/bitnami/kafka/config/test_topic_sink.properties
+    tty: true
+
   postgres:
     image: postgres:13.3
     environment:
@@ -43,6 +59,8 @@ services:
       - .:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    networks:
+      - distributed-pbm
 
 networks:
   distributed-pbm:

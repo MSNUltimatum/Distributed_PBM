@@ -1,0 +1,6 @@
+{
+  "database": "msndb",
+  "host": "localhost",
+  "user": "flaskserver",
+  "password": "psqlpass"
+}

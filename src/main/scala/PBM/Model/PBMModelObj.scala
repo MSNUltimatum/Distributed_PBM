@@ -4,13 +4,12 @@ package Model
 
 import PBM.Estimator.EMEstimator
 import PBM.Util.DataClasses._
+import PBM.Util.HelperClasses.PostgresConfigs
 
-import org.apache.spark.sql.functions.broadcast
-
-import scala.reflect.runtime.universe.TypeTag
-import org.apache.spark.sql.{Column, DataFrame, Dataset, SaveMode, functions}
+import org.apache.spark.sql._
 import org.apache.spark.storage.StorageLevel
 
+import scala.reflect.runtime.universe.TypeTag
 import scala.util.{Failure, Success, Try}
 
 object PBMModelObj {
@@ -23,39 +22,27 @@ object PBMModelObj {
     private lazy val attractiveParameter: Dataset[AttractiveParameter] = getAttractivePart(modelDataset.toDF())
     private lazy val examParameters: Dataset[ExaminationParameter] = getExaminationPart(modelDataset.toDF())
 
-    def serialize(pathToSerialize: String): Unit = {
-      modelDataset.write.mode(SaveMode.Overwrite).parquet(pathToSerialize)
+    object serialize {
+      def parquet(pathToSerialize: String): Unit = modelDataset.write.mode(SaveMode.Overwrite).parquet(pathToSerialize)
+
+      def postgres(postgresConfigs: PostgresConfigs): Unit = {
+        attractiveParameter
+          .write
+          .option("truncate", "true")
+          .mode(SaveMode.Overwrite)
+          .jdbc(postgresConfigs.connectionPath, postgresConfigs.attractiveTable, postgresConfigs.getConnProperties)
+
+        examParameters
+          .write
+          .option("truncate", "true")
+          .mode(SaveMode.Overwrite)
+          .jdbc(postgresConfigs.connectionPath, postgresConfigs.examinationTable, postgresConfigs.getConnProperties)
+      }
     }
-
-    def getFullClickProbability[T <: SearchSession](session: T): Dataset[RankProbability] = {
-      val probabilityColumn: Column = ($"attrNumerator" / $"attrDenominator") * ($"examNumerator" / $"examDenominator")
-      val searchSessionDf: DataFrame = session.toExplodeSearchSession.toDF()
-      val attrDf: DataFrame = addAttractive(searchSessionDf)
-      val examDf: DataFrame = addExamination(attrDf)
-      val filledDf: DataFrame = fillEmptyVals(examDf)
-      filledDf.select($"query", $"result", $"rank", probabilityColumn.as("probability")).as[RankProbability]
-    }
-
-    def getConditionalClickProbability[T <: SearchSession](session: T): DataFrame = ???
-
-    private def addAttractive(ds: DataFrame): DataFrame = broadcast(ds.as("ss"))
-      .join(attractiveParameter.as("attr"), $"ss.query" === $"attr.query" && $"ss.result" === $"attr.resultId", "left")
-      .drop($"ss.query")
-      .drop($"attr.resultId")
-      .drop($"attr.rank")
-
-    private def addExamination(ds: DataFrame): DataFrame = broadcast(ds.as("ss"))
-      .join(examParameters.as("ex"), $"ss.rank" === $"ex.rank", "left")
-      .drop($"ex.rank")
-
-    private def fillEmptyVals(df: DataFrame): DataFrame = df
-      .na.fill(1, Seq("attrNumerator", "examNumerator"))
-      .na.fill(2, Seq("attrDenominator", "examDenominator"))
 
     private def getAttractivePart(df: DataFrame): Dataset[AttractiveParameter] =
       df.groupBy("query", "resultId").agg(
         functions.first($"rank").as("rank"),
-        functions.first($"pk").as("pk"),
         functions.first($"attrNumerator").as("attrNumerator"),
         functions.first($"attrDenominator").as("attrDenominator")).as[AttractiveParameter]
 
@@ -93,6 +80,11 @@ object PBMModelObj {
       def parquet[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] = {
         val parquetDf: DataFrame = spark.read.parquet(path)
         dataFrame[T](parquetDf, iterNum)
+      }
+
+      def json[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] = {
+        val jsonDf: DataFrame = spark.read.json(path)
+        dataFrame[T](jsonDf, iterNum)
       }
 
       private def tryTrain[T <: TrainingSearchSession](lazyDs: Dataset[T], iterNum: Int): Either[PBMModel, String] = Try(estimator.train(lazyDs, iterNum)) match {

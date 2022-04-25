@@ -1,0 +1,7 @@
+{
+  "connectionPath": "jdbc:postgresql://localhost:5432/msndb",
+  "user": "model",
+  "password": "psqlpass",
+  "attractiveTable": "modelResults.attractiveParams",
+  "examinationTable": "modelResults.examinationParams"
+}
