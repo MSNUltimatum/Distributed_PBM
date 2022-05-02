@@ -60,7 +60,6 @@ private[PBM] case class EMEstimator() {
       case i if i > 0 => rec(i - 1, update(df))
       case _ => df
     }
-
     rec(iterNum, originModel)
   }
 

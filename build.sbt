@@ -9,6 +9,8 @@ libraryDependencies += "org.postgresql" % "postgresql" % "42.3.4"
 libraryDependencies += "com.github.pureconfig" %% "pureconfig" % "0.17.1"
 libraryDependencies += "org.apache.kafka" %% "kafka-streams-scala" % "3.1.0"
 libraryDependencies += "joda-time" % "joda-time" % "2.10.14"
+libraryDependencies += "org.apache.kafka" % "connect-api" % "3.1.0"
+
 
 val circeVersion = "0.14.1"
 
