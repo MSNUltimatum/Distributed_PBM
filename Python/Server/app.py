@@ -20,7 +20,8 @@ def get_pages():
 @app.route('/api/v1/submitResult', methods=['POST'])
 def submit_result():
     body: Dict[str, Any] = request.get_json()
-    kafka_service.write_to_pbm_topic(body)
+    print(body)
+    # kafka_service.write_to_pbm_topic(body)
     return "success"
 
 
