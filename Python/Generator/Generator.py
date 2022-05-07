@@ -87,11 +87,11 @@ class Generator:
         self.raise_response(response, f"querying {url}")
         return response.json()
 
-    def get_clicks(self, results: List[int]) -> List[Dict[str, int]]:
+    def get_clicks(self, results: List[int]) -> List[Dict[str, Any]]:
         click_positions: Set[int] = self.generator_rules.get_click_positions()
         clicked_distribution: Callable[[Tuple[int, int]],
                                        Dict[str, Any]] = lambda x: {"resultId": x[0],
-                                                                    "clicked": int(x[1] in click_positions)}
+                                                                    "clicked": x[1] in click_positions}
         return list(map(clicked_distribution, zip(results, range(1, len(results) + 1))))
 
     def send_response(self, query: int, clicks: List[Dict[str, int]]) -> NoReturn:
@@ -108,5 +108,5 @@ class Generator:
             error(f"Error has occurred on step: {step}.\nError trace: {e}.")
 
 
-g = Generator("first-three-rule")
+g = Generator("last-three-rule")
 g.start_generating(2)

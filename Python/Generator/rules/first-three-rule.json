@@ -1,15 +1,10 @@
 {
   "name": "first-three-rule",
   "queries_parts": [
-    "cats",
-    "dogs",
     "big data",
     "scala",
     "streaming",
-    "java",
-    "animals",
-    "cows",
-    "cucumber"
+    "java"
   ],
   "click_probabilities": [
     {

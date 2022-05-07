@@ -7,7 +7,8 @@ services:
       - "2181:2181"
     hostname: zk1
     networks:
-      - distributed-pbm
+      net_pet:
+        ipv4_address: 172.27.1.9
     tty: true
 
   kafka1:
@@ -30,24 +31,39 @@ services:
       KAFKA_BROKER_ID: 1
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka1:19092, PLAINTEXT_HOST://${DOCKER_HOST_IP:-127.0.0.1}:9092
     networks:
-      - distributed-pbm
+      net_pet:
+        ipv4_address: 172.27.1.8
     tty: true
 
   kafka-connect:
-    image: 'bitnami/kafka:2.5.0'
-    container_name: kafka_connect
-    ports:
-      - '8079:8083'
-    volumes:
-      - './kafka_connect_data:/bitnami'
-      - './kafka_connect_config/worker.properties:/opt/bitnami/kafka/config/worker.properties'
+    image: cnfldemos/cp-server-connect-datagen:0.5.0-6.2.0
+    hostname: connect
+    container_name: connect
     depends_on:
       - zookeeper
       - kafka1
+    ports:
+      - "8083:8083"
+    environment:
+      CONNECT_BOOTSTRAP_SERVERS: 'kafka1:19092'
+      CONNECT_REST_ADVERTISED_HOST_NAME: connect
+      CONNECT_REST_PORT: 8083
+      CONNECT_GROUP_ID: compose-connect-group
+      CONNECT_CONFIG_STORAGE_TOPIC: docker-connect-configs
+      CONNECT_CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_OFFSET_STORAGE_TOPIC: docker-connect-offsets
+      CONNECT_OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_STATUS_STORAGE_TOPIC: docker-connect-status
+      CONNECT_STATUS_STORAGE_REPLICATION_FACTOR: 1
+      CONNECT_KEY_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_VALUE_CONVERTER: org.apache.kafka.connect.storage.StringConverter
+      CONNECT_PLUGIN_PATH: "/usr/share/java,/usr/share/confluent-hub-components"
+      CONNECT_ZOOKEEPER_CONNECT: 'zookeeper:2181'
+    volumes:
+      - ./kafka_connect_config/hdfs-plugin:/usr/share/java/hdfs-plugin
     networks:
-      - distributed-pbm
-    command: /opt/bitnami/kafka/bin/connect-standalone.sh /opt/bitnami/kafka/config/worker.properties /opt/bitnami/kafka/config/test_topic_sink.properties
-    tty: true
+      net_pet:
+        ipv4_address: 172.27.1.7
 
   postgres:
     image: postgres:13.3
@@ -60,13 +76,14 @@ services:
     ports:
       - "5432:5432"
     networks:
-      - distributed-pbm
+      net_pet:
+        ipv4_address: 172.27.1.10
 
   namenode:
     image: bde2020/hadoop-namenode:2.0.0-hadoop2.7.4-java8
     container_name: namenode
     volumes:
-      - /tmp/hdfs/namenode:/hadoop/dfs/name
+      - ./hdfs/namenode:/hadoop/dfs/name
     environment:
       - CLUSTER_NAME=test
     env_file:
@@ -81,7 +98,7 @@ services:
     image: bde2020/hadoop-datanode:2.0.0-hadoop2.7.4-java8
     container_name: datanode
     volumes:
-      - /tmp/hdfs/datanode:/hadoop/dfs/data
+      - ./hdfs/datanode:/hadoop/dfs/data
       - ./bank:/bank
     env_file:
       - ./hadoop-hive.env
@@ -101,4 +118,3 @@ networks:
       driver: default
       config:
         - subnet: 172.27.0.0/16
-  distributed-pbm:

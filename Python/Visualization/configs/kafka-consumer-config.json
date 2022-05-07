@@ -1,0 +1,6 @@
+{
+  "bootstrap_servers": ["localhost:9092"],
+  "topic": "ranked_output",
+  "auto_offset": "earliest",
+  "group_id": "pbm_ranked_result-1"
+}

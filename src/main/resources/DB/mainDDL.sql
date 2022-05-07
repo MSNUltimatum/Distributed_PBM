@@ -2,19 +2,17 @@ CREATE SCHEMA modelResults;
 
 CREATE
 USER flaskServer WITH PASSWORD 'psqlpass';
-GRANT ALL PRIVILEGES ON SCHEMA
-msnDB.modelresults TO flaskserver;
+GRANT ALL PRIVILEGES ON msnDB TO flaskserver
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA modelresults TO flaskserver;
 
 CREATE
 USER model WITH PASSWORD 'psqlpass';
-GRANT ALL PRIVILEGES ON DATABASE
-msnDB TO model;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA modelresults TO model;
 
 CREATE TABLE modelResults.attractiveParams
 (
     query             BIGINT,
     "resultId"        BIGINT,
-    rank              INTEGER,
     "attrNumerator"   DOUBLE PRECISION,
     "attrDenominator" BIGINT,
     PRIMARY KEY (query, "resultId")

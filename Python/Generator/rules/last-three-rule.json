@@ -1,0 +1,16 @@
+{
+  "name": "first-three-rule",
+  "queries_parts": [
+    "big data",
+    "scala",
+    "streaming",
+    "java"
+  ],
+  "click_probabilities": [
+    {
+      "probability": 100,
+      "count": 3,
+      "positions": [8, 9, 10]
+    }
+  ]
+}

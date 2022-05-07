@@ -1,5 +1,6 @@
 # Created by Jayesh J.
-
+*/hdfs
+*.DS_Store
 *.class
 *.log
 *.iml

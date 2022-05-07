@@ -1,3 +1,4 @@
+import datetime
 from typing import Dict, Any, List, Tuple
 
 
@@ -36,9 +37,10 @@ class DTOResponse:
         self.response: Dict[str, Any] = response
         self.query: int = response.get("query")
         self.results: List[Dict[str, int]] = response.get("results", [])
+        self.ts: str = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def to_json(self) -> Dict[str, Any]:
-        return self.response
+        return {"timestamp": self.ts, **self.response}
 
     def valid(self) -> bool:
         return self.query and all('resultId' in x and 'clicked' in x for x in self.results)
@@ -52,7 +54,7 @@ class PagesProbabilityContainer:
         probabilities: List[float] = list(map(lambda x: x.get_full_page_probability(), self.pages))
         results: List[int] = self.get_results()
         zipped = zip(results, probabilities)
-        sorted_results = sorted(zipped, key=lambda x: x[1], reverse=True)
+        sorted_results = sorted(zipped, key=lambda x: (x[1], -x[0]), reverse=True)
         return list(map(lambda p: p[0], sorted_results))
 
     def get_results(self) -> List[int]:

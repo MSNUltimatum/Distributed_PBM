@@ -12,13 +12,14 @@ class PBMRepository:
 
     def get_pages_probabilities(self, query_id: int, results: List[int]):
         query: str = f"""
-        WITH qp AS (SELECT {query_id} AS q, unnest(array[{','.join(map(str, results))}]) AS r)
-        SELECT qp.q, qp.r, a.rank, a."attrNumerator", a."attrDenominator", e."examNumerator", e."examDenominator" 
-        FROM qp
+        WITH qp AS (SELECT {query_id} AS q, unnest(array[{','.join(map(str, results))}]) AS r),
+        qpr AS (SELECT qp.q, qp.r, row_number() over () AS rn FROM qp)
+        SELECT qpr.q, qpr.r, qpr.rn, a."attrNumerator", a."attrDenominator", e."examNumerator", e."examDenominator" 
+        FROM qpr
         LEFT JOIN msndb.modelresults.attractiveparams AS a 
-        on a.query = qp.q AND a."resultId" = qp.r
+            on a.query = qpr.q AND a."resultId" = qpr.r
         LEFT JOIN msndb.modelresults.examinationparams AS e 
-        on a.rank = e.rank
+            on qpr.rn = e.rank
         """
         data: List[Tuple] = self.execute_query(query)
         return PagesProbabilityContainer(data)
