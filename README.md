@@ -1,3 +1,3 @@
 # Distributed PBM model
 
-![](images/architecture.jpg)
+![](assets/architecture.png)

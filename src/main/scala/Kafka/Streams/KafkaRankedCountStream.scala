@@ -28,7 +28,7 @@ object KafkaRankedCountStream extends App {
     results.results zip (1 to results.results.length) map { case (r, i) => RankedClick(i, r.clicked) } filter (_.clicked)
 
   val config: Properties = new Properties
-  config.put(StreamsConfig.APPLICATION_ID_CONFIG, "pbm_clicks_test")
+  config.put(StreamsConfig.APPLICATION_ID_CONFIG, "pbm_clicks_analytics_stream")
   config.put(StreamsConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092")
   config.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
   config.put(StreamsConfig.DEFAULT_KEY_SERDE_CLASS_CONFIG, Serdes.String.getClass)

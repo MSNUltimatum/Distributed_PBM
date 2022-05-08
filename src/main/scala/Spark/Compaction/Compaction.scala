@@ -1,6 +1,7 @@
 package com.dreamteam.clickmodels
-package Spark
-package Compaction.Logic
+package Spark.Compaction
+
+import Spark.spark
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.expressions.{Window, WindowSpec}
@@ -9,14 +10,18 @@ import org.apache.spark.sql.functions.row_number
 import scala.util.{Failure, Success, Try}
 
 object Compaction {
+
   import spark.implicits._
-  case class CompactedDf(df: DataFrame){
-    object serialize{
+
+  case class CompactedDf(df: DataFrame) {
+    object serialize {
       def parquet(path: String): Unit = df.write.parquet(path)
+
       def json(path: String): Unit = df.write.json(path)
     }
   }
-  case object CompactedDf{
+
+  case object CompactedDf {
     def json(pathForCompaction: String, groupCount: Int): Either[CompactedDf, String] = {
       tryCompact(pathForCompaction, groupCount, spark.read.json)
     }

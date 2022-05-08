@@ -7,4 +7,6 @@ object JobsArguments {
   case object NoArgs extends PBMJobArgs
 
   case class TrainArgs(pathToData: String, iterationNums: Int, modelSerializationPath: String = "") extends PBMJobArgs
+
+  case class ReTrainArgs(pathToData: String, pathToModel: String, iterationNums: Int, modelSerializationPath: String = "") extends PBMJobArgs
 }

@@ -68,7 +68,6 @@ class RankedCountVisualisation:
                                     "top": list(self.ranked_count.values())}
             circle.data_source.data = {"x": list(map(str, self.ranked_count.keys())),
                                        "y": list(self.ranked_count.values())}
-            print(circle.data_source.data)
             if mc + 1 > self.MAX_POLL_RECORDS:
                 break
             else:

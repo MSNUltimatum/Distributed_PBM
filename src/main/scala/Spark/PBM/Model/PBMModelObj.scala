@@ -65,30 +65,52 @@ object PBMModelObj {
       }
     }
 
+    object retrain {
+      def json[T <: TrainingSearchSession : TypeTag](pbm: PBMModel, path: String, iterNum: Int = 50): Either[PBMModel, String] = {
+        val df: DataFrame = spark.read.json(path)
+        dataFrame[T](pbm, df, iterNum)
+      }
+
+      def dataFrame[T <: TrainingSearchSession : TypeTag](pbm: PBMModel, df: DataFrame, iterNum: Int = 50): Either[PBMModel, String] =
+        Try(df.as[T]) match {
+          case Success(ds) => tryReTrain(pbm, ds, iterNum)
+          case Failure(exception) => Right(s"The error has occurred: ${exception.getMessage}")
+        }
+
+      private def tryReTrain[T <: TrainingSearchSession](pbm: PBMModel, lazyDs: Dataset[T], iterNum: Int): Either[PBMModel, String] =
+        Try(estimator.retrain(pbm, lazyDs, iterNum)) match {
+          case Success(pbm) => Left(pbm)
+          case Failure(exception) => Right(f"The error has occurred: ${exception.getMessage}.")
+        }
+    }
+
     object train {
+      def parquet[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] =
+        tryReadAndTrain[T](spark.read.parquet(path), iterNum)
+
+      def json[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] =
+        tryReadAndTrain[T](spark.read.json(path), iterNum)
+
+      private def tryReadAndTrain[T <: TrainingSearchSession : TypeTag](option: => DataFrame, iterNum: Int): Either[PBMModel, String] =
+        Try(option) match {
+          case Success(df) => dataFrame[T](df, iterNum)
+          case Failure(ex) => Right(ex.getMessage)
+        }
+
+      def dataSet[T <: TrainingSearchSession](trainSessions: Dataset[T], iterNum: Int = 50): Either[PBMModel, String] =
+        tryTrain(trainSessions, iterNum)
+
       def dataFrame[T <: TrainingSearchSession : TypeTag](df: DataFrame, iterNum: Int = 50): Either[PBMModel, String] =
         Try(df.as[T]) match {
           case Success(ds) => tryTrain(ds, iterNum)
           case Failure(exception) => Right(s"The error has occurred: ${exception.getMessage}")
         }
 
-      def dataSet[T <: TrainingSearchSession](trainSessions: Dataset[T], iterNum: Int = 50): Either[PBMModel, String] =
-        tryTrain(trainSessions, iterNum)
-
-      def parquet[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] = {
-        val parquetDf: DataFrame = spark.read.parquet(path)
-        dataFrame[T](parquetDf, iterNum)
-      }
-
-      def json[T <: TrainingSearchSession : TypeTag](path: String, iterNum: Int = 50): Either[PBMModel, String] = {
-        val jsonDf: DataFrame = spark.read.json(path)
-        dataFrame[T](jsonDf, iterNum)
-      }
-
-      private def tryTrain[T <: TrainingSearchSession](lazyDs: Dataset[T], iterNum: Int): Either[PBMModel, String] = Try(estimator.train(lazyDs, iterNum)) match {
-        case Success(pbm) => Left(pbm)
-        case Failure(exception) => Right(f"The error has occurred: ${exception.getMessage}.")
-      }
+      private def tryTrain[T <: TrainingSearchSession](lazyDs: Dataset[T], iterNum: Int): Either[PBMModel, String] =
+        Try(estimator.train(lazyDs, iterNum)) match {
+          case Success(pbm) => Left(pbm)
+          case Failure(exception) => Right(f"The error has occurred: ${exception.getMessage}.")
+        }
     }
   }
 }

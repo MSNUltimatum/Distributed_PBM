@@ -22,7 +22,7 @@ object PostgresJob extends BaseJob[TrainArgs] {
           case Left(value) => println(value)
         }
         if(args.modelSerializationPath.nonEmpty) pbm.serialize.parquet(args.modelSerializationPath)
-      case Right(exp) => println(s"Error: $exp")
+      case Right(exp) => println(exp)
     }
   }
 }

@@ -14,8 +14,8 @@ class Page:
 
     def get_full_page_probability(self) -> float:
         if self.attractiveNumerator and self.examinationNumerator:
-            return ((self.attractiveNumerator / self.attractiveDenominator) *
-                    (self.examinationNumerator / self.examinationDenominator))
+            return round((self.attractiveNumerator / self.attractiveDenominator) *
+                         (self.examinationNumerator / self.examinationDenominator), 4)
         else:
             return 0.0
 
@@ -55,6 +55,7 @@ class PagesProbabilityContainer:
         results: List[int] = self.get_results()
         zipped = zip(results, probabilities)
         sorted_results = sorted(zipped, key=lambda x: (x[1], -x[0]), reverse=True)
+        print(sorted_results)
         return list(map(lambda p: p[0], sorted_results))
 
     def get_results(self) -> List[int]:

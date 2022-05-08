@@ -12,10 +12,15 @@ import org.apache.spark.sql.{Column, DataFrame, Dataset, functions}
 import scala.annotation.tailrec
 
 private[PBM] case class EMEstimator() {
-
   import spark.implicits._
 
   private val uuid: UserDefinedFunction = udf(() => java.util.UUID.randomUUID().toString)
+
+  private val attrUpdateColumn: Column = (lit(1) - ($"train.examNumerator" / $"train.examDenominator")) * ($"train.attrNumerator" / $"train.attrDenominator") /
+    (lit(1) - ($"train.examNumerator" / $"train.examDenominator") * ($"train.attrNumerator" / $"train.attrDenominator"))
+
+  private val examUpdateColumn: Column = (lit(1) - ($"train.attrNumerator" / $"train.attrDenominator")) * ($"train.examNumerator" / $"train.examDenominator") /
+    (lit(1) - ($"train.examNumerator" / $"train.examDenominator") * ($"train.attrNumerator" / $"train.attrDenominator"))
 
   def train[T <: TrainingSearchSession](trainSessions: Dataset[T], iterNum: Int): PBMModel = {
     require(iterNum > 1)
@@ -28,17 +33,16 @@ private[PBM] case class EMEstimator() {
   def retrain[T <: TrainingSearchSession](pbm: PBMModel, ds: Dataset[T], iterNum: Int): PBMModel = {
     require(iterNum > 1)
     val currentDf: DataFrame = pbm.modelDataset.toDF()
+    val depletedDf: DataFrame = depleteDf(currentDf)
     val explodedDf: DataFrame = explodeResults(ds.toDF())
     val emPrepared: DataFrame = addStatisticsColumn(explodedDf).drop($"result")
-    val retrained: DataFrame = iterativelyEstimate(iterNum, currentDf.union(emPrepared))
+    val retrained: DataFrame = iterativelyEstimate(iterNum, depletedDf.union(emPrepared))
     PBMModel(modelDataset = retrained.as[FullModelParameters])
   }
 
-  private val attrUpdateColumn: Column = (lit(1) - ($"train.examNumerator" / $"train.examDenominator")) * ($"train.attrNumerator" / $"train.attrDenominator") /
-    (lit(1) - ($"train.examNumerator" / $"train.examDenominator") * ($"train.attrNumerator" / $"train.attrDenominator"))
-
-  private val examUpdateColumn: Column = (lit(1) - ($"train.attrNumerator" / $"train.attrDenominator")) * ($"train.examNumerator" / $"train.examDenominator") /
-    (lit(1) - ($"train.examNumerator" / $"train.examDenominator") * ($"train.attrNumerator" / $"train.attrDenominator"))
+  private def depleteDf(frame: DataFrame): DataFrame = frame
+    .withColumn("attrNumerator", $"attrNumerator" * lit(0.95))
+    .withColumn("examNumerator", $"attrNumerator" * lit(0.95))
 
   private def explodeResults(trainSessions: DataFrame): DataFrame = {
     val windowSpec: WindowSpec = Window.partitionBy($"recordId").orderBy(lit(1))
@@ -63,6 +67,7 @@ private[PBM] case class EMEstimator() {
       case i if i > 0 => rec(i - 1, update(df))
       case _ => df
     }
+
     rec(iterNum, originModel)
   }
 
