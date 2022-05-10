@@ -55,9 +55,6 @@ object PBMModelObj {
 
     val estimator: EMEstimator = EMEstimator()
 
-    def retrain[T <: TrainingSearchSession](pbm: PBMModel, ds: Dataset[T], iterNum: Int = 50): PBMModel =
-      estimator.retrain(pbm, ds, iterNum)
-
     def deserialize(pathToModelFolder: String): Either[PBMModel, String] = {
       Try(spark.read.parquet(pathToModelFolder).as[FullModelParameters]) match {
         case Success(attr) => Left(PBMModel(attr))

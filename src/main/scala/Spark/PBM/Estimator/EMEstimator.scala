@@ -7,6 +7,7 @@ import Spark.PBM.Util.DataClasses.{FullModelParameters, TrainingSearchSession}
 
 import org.apache.spark.sql.expressions.{UserDefinedFunction, Window, WindowSpec}
 import org.apache.spark.sql.functions.{explode, lit, row_number, udf, when}
+import org.apache.spark.sql.types.{DoubleType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, Dataset, functions}
 
 import scala.annotation.tailrec
@@ -36,13 +37,13 @@ private[PBM] case class EMEstimator() {
     val depletedDf: DataFrame = depleteDf(currentDf)
     val explodedDf: DataFrame = explodeResults(ds.toDF())
     val emPrepared: DataFrame = addStatisticsColumn(explodedDf).drop($"result")
-    val retrained: DataFrame = iterativelyEstimate(iterNum, depletedDf.union(emPrepared))
+    val retrained: DataFrame = iterativelyEstimate(iterNum, depletedDf.unionByName(emPrepared))
     PBMModel(modelDataset = retrained.as[FullModelParameters])
   }
 
   private def depleteDf(frame: DataFrame): DataFrame = frame
     .withColumn("attrNumerator", $"attrNumerator" * lit(0.95))
-    .withColumn("examNumerator", $"attrNumerator" * lit(0.95))
+    .withColumn("examNumerator", $"examNumerator" * lit(0.95))
 
   private def explodeResults(trainSessions: DataFrame): DataFrame = {
     val windowSpec: WindowSpec = Window.partitionBy($"recordId").orderBy(lit(1))
@@ -55,10 +56,10 @@ private[PBM] case class EMEstimator() {
   }
 
   private def addStatisticsColumn(df: DataFrame): DataFrame = df
-    .withColumn("attrNumerator", lit(1))
-    .withColumn("attrDenominator", lit(2))
-    .withColumn("examNumerator", lit(1))
-    .withColumn("examDenominator", lit(2))
+    .withColumn("attrNumerator", lit(1).cast(DoubleType))
+    .withColumn("attrDenominator", lit(2).cast(LongType))
+    .withColumn("examNumerator", lit(1).cast(DoubleType))
+    .withColumn("examDenominator", lit(2).cast(LongType))
 
   private def iterativelyEstimate(iterNum: Int, originModel: DataFrame): DataFrame = {
     @tailrec

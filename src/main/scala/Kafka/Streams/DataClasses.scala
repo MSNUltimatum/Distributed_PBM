@@ -63,20 +63,20 @@ object DataClasses {
 
     implicit val serdeResult: Serde[RankedClick] = {
       val ser: RankedClick => Array[Byte] = (n: RankedClick) => n.asJson.noSpaces.getBytes
-      val deser: Array[Byte] => Option[RankedClick] = (a: Array[Byte]) => {
+      val deserializer: Array[Byte] => Option[RankedClick] = (a: Array[Byte]) => {
         val str = new String(a)
         decode[RankedClick](str).toOption
       }
-      fromFn(ser, deser)
+      fromFn(ser, deserializer)
     }
 
     implicit val serdeNC: Serde[RankCount] = {
       val ser: RankCount => Array[Byte] = (n: RankCount) => n.asJson.noSpaces.getBytes
-      val deser: Array[Byte] => Option[RankCount] = (a: Array[Byte]) => {
+      val deserializer: Array[Byte] => Option[RankCount] = (a: Array[Byte]) => {
         val str = new String(a)
         decode[RankCount](str).toOption
       }
-      fromFn(ser, deser)
+      fromFn(ser, deserializer)
     }
   }
 }

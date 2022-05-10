@@ -6,6 +6,7 @@ import java.nio.file.Paths
 
 package object Spark {
   val spark: SparkSession = SparkSession.builder()
+    .config("spark.driver.host", "127.0.0.1")
     .config("spark.jars", Paths.get("src/main/resources/jars/postgresql-42.2.6.jar").toAbsolutePath.toString)
     .master("local[*]").config("spark.executor.memory", "6g").getOrCreate()
 }
